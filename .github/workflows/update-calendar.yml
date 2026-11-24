@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '6 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add virgen-inmaculada-f.ics
+          git add virgen-inmaculada-b.ics
           git commit -m "Actualización automática del calendario" || echo "No changes"
           git pull --rebase
           git push
