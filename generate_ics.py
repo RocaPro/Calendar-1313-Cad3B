@@ -1,21 +1,3 @@
-import requests
-
-url = (
-    "https://www.asturfutbol.es/pnfg/NPcd/NFG_VisCalendario_Vis"
-    "?CDetalle=1&NPcd_Pdf=&cod_primaria=1000120"
-    "&codcompeticion=22880369&codgrupo=23105615"
-    "&codtemporada=22"
-)
-
-r = requests.get(url, headers={
-    "User-Agent": "Mozilla/5.0"
-}, timeout=30)
-
-print("HTTP:", r.status_code)
-print("Bytes:", len(r.content))
-print("URL final:", r.url)
-print(r.text[:500])
-
 import re
 import time
 import requests
@@ -26,13 +8,13 @@ from datetime import datetime, timedelta
 # CONFIGURACIÓN DEL EQUIPO
 # ==================================================
 
-TEAM_NAME = 'C.D. Virgen Inmaculada "F"'
-TEAM_CODE = "22903000"
+TEAM_NAME = 'C.D. Virgen Inmaculada "B"'
+TEAM_CODE = "3729"
 TEMPORADA = "22"
-COMPETICION = "22880369"
-GRUPO = "23105615"
+COMPETICION = "22880353"
+GRUPO = "23079974"
 NUM_JORNADAS = 30
-OUTPUT_FILE = "virgen-inmaculada-f.ics"
+OUTPUT_FILE = "virgen-inmaculada-b.ics"
 PETICIONES_SESION = 0
 
 HEADERS = {
@@ -72,88 +54,46 @@ def norm(s):
 # ==================================================
 
 def fetch_jornada(j):
-
     global SESSION
-
     global SESSION_INICIADA
-
     global PETICIONES_SESION
 
     # Renovar sesión cada 8 consultas
-
     if not SESSION_INICIADA or PETICIONES_SESION >= 8:
-
         SESSION.close()
-
         SESSION = requests.Session()
-
         SESSION.headers.update(HEADERS)
 
-        inicio = SESSION.get(
+        inicio = SESSION.get("https://www.asturfutbol.es/", timeout=30)
 
-            "https://www.asturfutbol.es/",
-
-            timeout=30
-
-        )
-
-        print(
-
-            "Nueva sesión:",
-
-            inicio.status_code,
-
-            len(inicio.text)
-
-        )
+        print("Nueva sesión:", inicio.status_code, len(inicio.text))
 
         SESSION_INICIADA = True
-
         PETICIONES_SESION = 0
 
     url = (
-
         "https://www.asturfutbol.es/pnfg/NPcd/NFG_CmpJornada"
-
         f"?cod_primaria=1000120&CodCompeticion={COMPETICION}"
-
         f"&CodGrupo={GRUPO}&CodTemporada={TEMPORADA}"
-
         f"&CodJornada={j}&Sch_Tipo_Juego=3&cod_agrupacion=1"
-
     )
 
     r = SESSION.get(
-
         url,
-
         headers={"Referer": "https://www.asturfutbol.es/"},
-
         timeout=30
-
     )
 
     PETICIONES_SESION += 1
 
-    print(
-
-        f"Jornada {j}: HTTP {r.status_code} | "
-
-        f"HTML {len(r.text)} bytes"
-
-    )
+    print(f"Jornada {j}: HTTP {r.status_code} | HTML {len(r.text)} bytes")
 
     r.raise_for_status()
 
     if not r.text.strip() or "NLogin" in r.url:
-
         PAGINAS_NO_DISPONIBLES.append(j)
 
-        raise RuntimeError(
-
-            f"Asturfutbol no ha entregado la jornada {j}"
-
-        )
+        raise RuntimeError(f"Asturfutbol no ha entregado la jornada {j}")
 
     return BeautifulSoup(r.text, "lxml")
 
@@ -337,9 +277,7 @@ def depurar(soup, flat):
         "pero no se pudo leer el partido"
     )
 
-    for k, m in enumerate(
-        re.finditer(re.escape(TEAM_NAME), flat)
-    ):
+    for k, m in enumerate(re.finditer(re.escape(TEAM_NAME), flat)):
         if k >= 2:
             break
 
@@ -348,9 +286,7 @@ def depurar(soup, flat):
             flat[max(0, m.start() - 200): m.end() + 300]
         )
 
-    s = soup.find(
-        string=lambda x: x and TEAM_NAME in x
-    )
+    s = soup.find(string=lambda x: x and TEAM_NAME in x)
 
     if s is not None and s.parent is not None:
         el = (
@@ -403,10 +339,10 @@ def generate_ics(partidos):
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Asturfutbol Cal//Virgen Inmaculada F//ES",
+        "PRODID:-//Asturfutbol Cal//Virgen Inmaculada B//ES",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
-        "X-WR-CALNAME:C.D. Virgen Inmaculada F - 3ª Benjamín",
+        "X-WR-CALNAME:C.D. Virgen Inmaculada B - 3ª Cadete",
         "X-WR-TIMEZONE:Europe/Madrid",
     ]
 
@@ -434,7 +370,7 @@ def generate_ics(partidos):
                 "%d-%m-%Y %H:%M"
             )
 
-            fin = dt + timedelta(hours=1, minutes=15)
+            fin = dt + timedelta(hours=1, minutes=45)
 
             lines += [
                 f"DTSTART;TZID=Europe/Madrid:{dt.strftime('%Y%m%dT%H%M%S')}",
@@ -452,7 +388,7 @@ def generate_ics(partidos):
         lines += [
             f"SUMMARY:{esc(summary)}",
             f"LOCATION:{esc(p['campo'])}",
-            f"DESCRIPTION:{esc('Jornada ' + str(p['jornada']) + ' - 3ª Benjamín. Generado automáticamente desde Asturfutbol')}",
+            f"DESCRIPTION:{esc('Jornada ' + str(p['jornada']) + ' - 3ª Cadete. Generado automáticamente desde Asturfutbol')}",
             "END:VEVENT",
         ]
 
@@ -475,20 +411,14 @@ def main():
         try:
             soup = fetch_jornada(j)
 
-            flat = norm(
-                soup.get_text(" ", strip=True)
-            )
+            flat = norm(soup.get_text(" ", strip=True))
 
             p = None
 
             bloques = bloques_partido(soup)
 
             if bloques:
-                p = parse_block(
-                    bloques[0],
-                    j,
-                    flat
-                )
+                p = parse_block(bloques[0], j, flat)
             else:
                 p = parse_texto(flat, j)
 
@@ -539,9 +469,7 @@ def main():
             "Se conserva el calendario anterior."
         )
 
-    print(
-        f"Total partidos encontrados: {len(partidos)}"
-    )
+    print(f"Total partidos encontrados: {len(partidos)}")
 
     if not partidos:
         raise SystemExit(
@@ -549,12 +477,7 @@ def main():
             "no se modifica el calendario."
         )
 
-    with open(
-        OUTPUT_FILE,
-        "w",
-        encoding="utf-8",
-        newline=""
-    ) as f:
+    with open(OUTPUT_FILE, "w", encoding="utf-8", newline="") as f:
         f.write(generate_ics(partidos))
 
     print(f"Archivo generado: {OUTPUT_FILE}")
@@ -562,4 +485,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
