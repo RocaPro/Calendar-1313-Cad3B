@@ -106,9 +106,9 @@ END:VEVENT
 BEGIN:VEVENT
 UID:j10-3729@asturfutbol-cal
 DTSTAMP:20260101T000000Z
-DTSTART;VALUE=DATE:20261205
-DTEND;VALUE=DATE:20261206
-SUMMARY:J10: C.D. La Braña "A" vs C.D. Virgen Inmaculada "B" (hora por confirmar)
+DTSTART;TZID=Europe/Madrid:20261205T140000
+DTEND;TZID=Europe/Madrid:20261205T154500
+SUMMARY:J10: C.D. La Braña "A" vs C.D. Virgen Inmaculada "B"
 LOCATION:EL MORTERO(H.SINTETICA)
 DESCRIPTION:Jornada 10 - 3ª Cadete. Generado automáticamente desde Asturfutbol
 END:VEVENT
